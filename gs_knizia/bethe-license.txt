@@ -1,0 +1,20 @@
+This program is released under a "I hope no one has to deal with this
+ever again"-license. You may do with it as you wish, including
+distributing it in source- or binary form, as long as you do not blame
+me if anything goes wrong.
+
+If you find the program useful, I would appreciate a citation to
+
+   Knizia, Chan - Density Matrix Embedding: A Simple Alternative
+      to Dynamical Mean-Field Theory
+   http://dx.doi.org/10.1103/PhysRevLett.109.186404
+
+in published work using the program. That is the paper for which it
+was written. In any case you should cite
+
+   Shiba - Magnetic Susceptibility at Zero Temperature for the
+      One-Dimensional Hubbard Model
+   http://dx.doi.org/10.1103/PhysRevB.6.930
+
+which describes the algorithm which was employed in this program.
+-- Gerald Knizia, 2014-06-03
