@@ -2,6 +2,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import sys
 import os
+sys.path.append('./gs_knizia/')
+import bethe_ansatz as gsba
 
 class BetheAnsatzFT(object):
     # half-filling, Sz = 0
@@ -114,7 +116,7 @@ class BetheAnsatzFT(object):
     def Enfunc(self, epsm, epsp):
         return self.sconvfunc(epsm + epsp)
    
-    def solve_epsilon_scf(self, nstep=100, tol = 1e-5):
+    def solve_epsilon_scf(self, nstep=100, tol = 1e-10):
     
         print "Calculating epsilon and kappa..."
         nmax  = 20
@@ -153,14 +155,23 @@ class BetheAnsatzFT(object):
         grandpot = self.get_grandpot()
         return grandpot
 
-
-def solve_energy_curve(U, ngrid=60):
-    Tgrid = np.linspace(0.1, 2, 20, endpoint=True)
-    dT = 0.01
+def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=False):
+    
     entropy = []
     grandpot = []
+    Tmin = Tgrid[0]
+    Tmax = Tgrid[-1]
+
+    FiniteTgrid = Tgrid
     
-    for T in Tgrid:
+    if Tmin <1e-5:
+        e,_ = gsba.CalcBetheEnergy_UandN(U, 1.0)
+        grandpot.append([0, e-U/2.])
+        entropy.append([0, 0])
+        FiniteTgrid = Tgrid[1:]
+
+
+    for T in FiniteTgrid:
         obj = BetheAnsatzFT(U, T, ngrid)
         g = obj.solve_grandpot()
         grandpot.append([T, g])
@@ -173,21 +184,31 @@ def solve_energy_curve(U, ngrid=60):
     grandpot = np.asarray(grandpot)
     energy = grandpot.copy()
     energy[:,1] += U/2. + Tgrid*entropy[:,1]
-    #energy = grandpot + U/2. + Tgrid*entropy
-    if not os.path.exists("./data"):
-        os.makedirs("./data")
-    np.savetxt("data/energy_U%d.txt"%U, energy)
-    np.savetxt("data/grandpot_U%d.txt"%U, grandpot)
-    np.savetxt("data/entropy_U%d.txt"%U, entropy)
-    #print energy
-    #plt.plot(Tgrid, energy)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    edir = outdir+"/energy/"
+    gdir = outdir+"/grandpot/"
+    sdir = outdir+"/entropy/"
+
+    for d in [edir, gdir, sdir]:
+        if not os.path.exists(d):
+            os.mkdir(d)
+        
+    np.savetxt(edir+"/energy_BA_U%d.txt"%U, energy)
+    np.savetxt(gdir+"/grandpot_BA_U%d.txt"%U, grandpot)
+    np.savetxt(sdir+"/entropy_BA_U%d.txt"%U, entropy)
         
     
 
 
 if __name__ == "__main__":
-    U = int(sys.argv[1])
-    solve_energy_curve(U)
+    U = float(sys.argv[1])
+    
+    outdir = "data/"
+    #Tgrid = np.linspace(0.00,2.0,41,endpoint=True)
+    Tgrid = [5.0]
+    #Tgrid = np.linspace(1.05,2.0,20, endpoint=True)
+    solve_energy_curve(U,Tgrid)
 
 
 

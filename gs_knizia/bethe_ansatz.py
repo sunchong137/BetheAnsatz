@@ -25,6 +25,8 @@ from commands import getoutput
 import scipy.optimize as optimize
 from math import pi
 
+CALL_DIR = '/home/sunchong/work/BetheAnsatz/gs_knizia/'
+
 def CalcBetheEnergy_UandQ(U, Q_):
    """invoke the C++ program for given parameters U, Q. Return energy for
    those parameters. Q is given in units of radians and must be in range
@@ -38,7 +40,7 @@ def CalcBetheEnergy_UandQ(U, Q_):
 
    # clamp to valid range. Q=0 is empty, Q=1.0 is half-filling.
    Q = np.clip(Q_, 0.0, 1.0)
-   Text = getoutput("./bethe_ansatz %.15f %.15f" % (U, Q))
+   Text = getoutput(CALL_DIR+"bethe_ansatz %.15f %.15f" % (U, Q))
    Lines = Text.splitlines()[-1]
    ls = Lines.split()
    E = float(ls[1])
