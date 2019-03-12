@@ -2,8 +2,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import sys
 import os
-sys.path.append('./gs_knizia/')
-import bethe_ansatz as gsba
+sys.path.append('/home/sunchong/work/BetheAnsatz/gs_knizia/')
 
 class BetheAnsatzFT(object):
     # half-filling, Sz = 0
@@ -165,6 +164,8 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=Fal
     FiniteTgrid = Tgrid
     
     if Tmin <1e-5:
+        import bethe_ansatz as gsba
+        
         e,_ = gsba.CalcBetheEnergy_UandN(U, 1.0)
         grandpot.append([0, e-U/2.])
         entropy.append([0, 0])
@@ -194,23 +195,38 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=Fal
         if not os.path.exists(d):
             os.mkdir(d)
         
-    np.savetxt(edir+"/energy_BA_U%d.txt"%U, energy)
-    np.savetxt(gdir+"/grandpot_BA_U%d.txt"%U, grandpot)
-    np.savetxt(sdir+"/entropy_BA_U%d.txt"%U, entropy)
-        
-    
+    if(savefile):
+        np.savetxt(edir+"/energy_BA_U%d.txt"%U, energy)
+        np.savetxt(gdir+"/grandpot_BA_U%d.txt"%U, grandpot)
+        np.savetxt(sdir+"/entropy_BA_U%d.txt"%U, entropy)
+    else:
+        print energy
 
+    return energy
+
+def solve_docc(U, Tgrid, outdir='./data/', du=0.01, ngrid=60, savefile=False):
+
+    Ep = solve_energy_curve(U+du, Tgrid, outdir, 0.01, ngrid,savefile)
+    Em = solve_energy_curve(U-du, Tgrid, outdir, 0.01, ngrid,savefile)
+    docc = Ep.copy()
+    docc[:,1] = (docc[:,1]-Em[:,1])/(2.*du) + 0.5
+
+    dodir = outdir+"/docc/"
+    if not os.path.exists(dodir):
+        os.mkdir(dodir)
+
+    if(savefile):
+        np.savetxt(dodir+"docc_BA_U%d.txt"%U, docc)
+
+    return docc
 
 if __name__ == "__main__":
     U = float(sys.argv[1])
-    
+    write2file = True
     outdir = "data/"
+    Tgrid=[1]
     #Tgrid = np.linspace(0.00,2.0,41,endpoint=True)
-    Tgrid = [5.0]
     #Tgrid = np.linspace(1.05,2.0,20, endpoint=True)
-    solve_energy_curve(U,Tgrid)
-
-
-
+    solve_energy_curve(U,Tgrid,savefile=write2file)
 
 
