@@ -204,27 +204,28 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=Fal
 
     return energy
 
-def solve_docc(U, Tgrid, outdir='./data/', du=0.01, ngrid=60, savefile=False):
-
-    Ep = solve_energy_curve(U+du, Tgrid, outdir, 0.01, ngrid,savefile)
-    Em = solve_energy_curve(U-du, Tgrid, outdir, 0.01, ngrid,savefile)
-    docc = Ep.copy()
-    docc[:,1] = (docc[:,1]-Em[:,1])/(2.*du) + 0.5
-
-    dodir = outdir+"/docc/"
-    if not os.path.exists(dodir):
-        os.mkdir(dodir)
-
-    if(savefile):
-        np.savetxt(dodir+"docc_BA_U%d.txt"%U, docc)
-
-    return docc
+#def solve_docc(U, Tgrid, outdir='./data/', du=0.01, ngrid=60, savefile=False):
+#
+#    Ep = solve_energy_curve(U+du, Tgrid, outdir, 0.01, ngrid,savefile)
+#    Em = solve_energy_curve(U-du, Tgrid, outdir, 0.01, ngrid,savefile)
+#    docc = Ep.copy()
+#    docc[:,1] = (docc[:,1]-Em[:,1])/(2.*du)
+#
+#    dodir = outdir+"/docc/"
+#    if not os.path.exists(dodir):
+#        os.mkdir(dodir)
+#
+#    if(savefile):
+#        np.savetxt(dodir+"docc_BA_U%d.txt"%U, docc)
+#
+#    return docc
 
 if __name__ == "__main__":
     U = float(sys.argv[1])
     write2file = True
     outdir = "data/"
-    Tgrid=[1]
+    beta = np.linspace(0.1,10,100,endpoint=True)
+    Tgrid = 1./beta
     #Tgrid = np.linspace(0.00,2.0,41,endpoint=True)
     #Tgrid = np.linspace(1.05,2.0,20, endpoint=True)
     solve_energy_curve(U,Tgrid,savefile=write2file)
