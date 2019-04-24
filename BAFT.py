@@ -181,6 +181,7 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=Fal
         s = -(objp.solve_grandpot() - objm.solve_grandpot())/(2*dT)
         entropy.append([T, s])
         print "T: %0.4f       GrandPot: %0.6f"%(T, g)
+        print "T: %0.4f       Entropy:  %0.6f"%(T, s)
     entropy = np.asarray(entropy)
     grandpot = np.asarray(grandpot)
     energy = grandpot.copy()
@@ -203,22 +204,6 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=Fal
         print energy
 
     return energy
-
-#def solve_docc(U, Tgrid, outdir='./data/', du=0.01, ngrid=60, savefile=False):
-#
-#    Ep = solve_energy_curve(U+du, Tgrid, outdir, 0.01, ngrid,savefile)
-#    Em = solve_energy_curve(U-du, Tgrid, outdir, 0.01, ngrid,savefile)
-#    docc = Ep.copy()
-#    docc[:,1] = (docc[:,1]-Em[:,1])/(2.*du)
-#
-#    dodir = outdir+"/docc/"
-#    if not os.path.exists(dodir):
-#        os.mkdir(dodir)
-#
-#    if(savefile):
-#        np.savetxt(dodir+"docc_BA_U%d.txt"%U, docc)
-#
-#    return docc
 
 if __name__ == "__main__":
     U = float(sys.argv[1])
