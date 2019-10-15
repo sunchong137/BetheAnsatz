@@ -6,7 +6,7 @@ sys.path.append('/home/sunchong/work/BetheAnsatz/gs_knizia/')
 
 class BetheAnsatzFT(object):
     # half-filling, Sz = 0
-    def __init__(self, U, T, ngrid):
+    def __init__(self, U, T, ngrid,gaussian=False):
         self.U = U/4.
         self.T = T
         self.ngrid = ngrid
@@ -14,8 +14,10 @@ class BetheAnsatzFT(object):
         self.B = 10
         self.kgrid = np.zeros(ngrid)
         self.lgrid = np.zeros(ngrid)
-        self.dk = 2.*self.Q / ngrid
-        self.dl = 2.*self.B / ngrid
+        self.kwts  = np.ones(ngrid) #weights of the k point for integration
+        self.lwts  = np.ones(ngrid)
+        #self.dk = 2.*self.Q / ngrid
+        #self.dl = 2.*self.B / ngrid
         #some functions used in integration functions
         self.kappa0 = np.zeros(ngrid)
         self.kappa = np.zeros(ngrid)
@@ -24,22 +26,32 @@ class BetheAnsatzFT(object):
         self.rho0 = np.zeros(ngrid)
         self.e0 = 0.
         self.grandpot = 0.
+        self.gaussian_grids = gaussian
     
     def generate_grids(self):
         # symmetrized partition
-        self.kgrid = np.linspace(-self.Q, self.Q, self.ngrid, endpoint=False)
-        self.lgrid = np.linspace(-self.B, self.B, self.ngrid, endpoint=False)
-        self.kgrid += self.dk/2.
-        self.lgrid += self.dl/2.
+        if self.gaussian_grids:
+            self.kgrid, self.kwts = _get_scaled_legendre_roots(-self.Q,self.Q,self.ngrid)
+            self.lgrid, self.lwts = _get_scaled_legendre_roots(-self.B,self.B,self.ngrid)
+        else:
+            self.kgrid = np.linspace(-self.Q, self.Q, self.ngrid, endpoint=False)
+            self.lgrid = np.linspace(-self.B, self.B, self.ngrid, endpoint=False)
+            dk = 2.*self.Q / self.ngrid
+            dl = 2.*self.B / self.ngrid
+            self.kgrid += dk/2.
+            self.lgrid += dl/2.
+            self.kwts  *= dk
+            self.lwts  *= dl
         
     def get_sig0(self):
         sig0 = np.zeros(self.ngrid)
         i = 0
         for l in self.lgrid:
-            sig0[i] = np.sum(self.sfunc(l, np.sin(self.kgrid)))*self.dk/(2.*np.pi)
+            sig0[i] = np.sum(self.sfunc(l, np.sin(self.kgrid))*self.kwts)/(2.*np.pi)
             i += 1
         self.sig0 = sig0
         return sig0
+
     def get_rho0(self):
         sig0 = self.sig0
         if(np.linalg.norm(sig0)<1e-9):
@@ -47,23 +59,24 @@ class BetheAnsatzFT(object):
         rho0 = np.zeros(self.ngrid)
         i = 0
         for k in self.kgrid:
-            rho0[i] = (self.U*self.dl*np.cos(k)/np.pi)* np.dot(sig0, 1./((self.lgrid-np.sin(k))**2+self.U**2))
+            rho0[i] = (self.U*np.cos(k)/np.pi) * np.dot(sig0*self.lwts, 1./((self.lgrid-np.sin(k))**2.+self.U**2.))
             
             i += 1
         rho0 += 1./(2.*np.pi)
         self.rho0 = rho0
         return rho0
+
     def get_e0(self):
         rho0 = self.rho0
         if(np.linalg.norm(rho0) < 1e-9):
             rho0 = self.get_rho0()
-        e0 = -2.*self.dk*np.dot(np.cos(self.kgrid), rho0)
+        e0 = -2.*np.dot(np.cos(self.kgrid), rho0*self.kwts)
         self.e0 = e0
         return e0
         
     def get_grandpot(self):
-        part1 = self.dk*np.dot(self.rho0, self.Gfunc(self.kappa))
-        part2 = self.dl*np.dot(self.sig0, self.eps1m-self.T*np.log(1./4.))
+        part1 = np.dot(self.rho0*self.kwts, self.Gfunc(self.kappa))
+        part2 = np.dot(self.sig0*self.lwts, self.eps1m-self.T*np.log(1./4.))
         Omega = self.e0 - self.U*2. - part1 - part2
         self.grandpot = Omega
         return Omega
@@ -75,7 +88,7 @@ class BetheAnsatzFT(object):
         kappa0 = np.zeros(self.ngrid)
         i = 0
         for k in self.kgrid:
-            kappa0[i] = -2.*np.cos(k) - 4.*self.dl*np.dot(self.sfunc(self.lgrid,np.sin(k)),np.sqrt(1.-(self.lgrid-1.j*self.U)**2).real)
+            kappa0[i] = -2.*np.cos(k) - 4.*np.dot(self.lwts*self.sfunc(self.lgrid,np.sin(k)),np.sqrt(1.-(self.lgrid-1.j*self.U)**2).real)
             i+=1
         self.kappa0 = kappa0
         return kappa0
@@ -85,7 +98,7 @@ class BetheAnsatzFT(object):
         convf = np.zeros(self.ngrid)
         i = 0
         for l in self.lgrid:
-            convf[i] = self.dl*np.dot(self.sfunc(l, self.lgrid), fl)
+            convf[i] = np.dot(self.sfunc(l, self.lgrid), fl*self.lwts)
             i += 1
         return convf
     # functions to be used in self-consistency
@@ -94,7 +107,7 @@ class BetheAnsatzFT(object):
         self.kappa0 = self.kappa0func()
         i = 0
         for k in self.kgrid:
-            kappa[i] = self.dl * np.dot(self.sfunc(self.lgrid, np.sin(k)), eps1p-eps1m)
+            kappa[i] = np.dot(self.sfunc(self.lgrid, np.sin(k))*self.lwts, eps1p-eps1m)
             i += 1
         self.kappa = kappa + self.kappa0
         return self.kappa
@@ -102,16 +115,18 @@ class BetheAnsatzFT(object):
     def epsnfunc(self, n, En):
         bn = 1./((n+1.)**2)
         return self.T * np.log(bn + (1-bn)*np.exp(En/self.T))
+
     def E1func(self, eps2, p=1.):
         # p : parity
         E1 = np.zeros(self.ngrid)
         i = 0
         for l in self.lgrid:
-            E1[i] = -self.dk * np.dot(np.cos(self.kgrid)*self.sfunc(l,np.sin(self.kgrid)), self.Gfunc(p*self.kappa))
+            E1[i] = -np.dot(np.cos(self.kgrid)*self.sfunc(l,np.sin(self.kgrid)), self.Gfunc(p*self.kappa)*self.kwts)
             i += 1
 
         E1 += self.sconvfunc(eps2)
         return E1
+
     def Enfunc(self, epsm, epsp):
         return self.sconvfunc(epsm + epsp)
    
@@ -147,6 +162,7 @@ class BetheAnsatzFT(object):
         if(itr == nstep-1):
             print "The convergence is NOT acheived after %d loops!"%nstep, "Final diff:", diff
         self.eps1m = np.copy(epsm[0])
+
     def solve_grandpot(self):
         self.generate_grids()
         self.solve_epsilon_scf()
@@ -154,7 +170,23 @@ class BetheAnsatzFT(object):
         grandpot = self.get_grandpot()
         return grandpot
 
-def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=False):
+def _get_scaled_legendre_roots(wl, wh, nw):
+    """
+    Scale nw Legendre roots, which lie in the
+    interval [-1, 1], so that they lie in [wl, wh]
+
+    Returns:
+        freqs : 1D ndarray
+        wts : 1D ndarray
+    """
+    freqs, wts = np.polynomial.legendre.leggauss(nw)
+    freqs += 1
+    freqs *= (wh - wl) / 2.
+    freqs += wl
+    wts *= (wh - wl) / 2.
+    return freqs, wts
+
+def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=100,savefile=False, gaussian=False,**kwargs):
     
     entropy = []
     grandpot = []
@@ -173,15 +205,17 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=Fal
 
 
     for T in FiniteTgrid:
-        obj = BetheAnsatzFT(U, T, ngrid)
+        obj = BetheAnsatzFT(U, T, ngrid,gaussian=gaussian)
         g = obj.solve_grandpot()
         grandpot.append([T, g])
-        objp = BetheAnsatzFT(U, T+dT, ngrid)
-        objm = BetheAnsatzFT(U, T-dT, ngrid)
+        objp = BetheAnsatzFT(U, T+dT, ngrid,gaussian=gaussian)
+        objm = BetheAnsatzFT(U, T-dT, ngrid,gaussian=gaussian)
         s = -(objp.solve_grandpot() - objm.solve_grandpot())/(2*dT)
         entropy.append([T, s])
+        e = g + U/2. + T*s
         print "T: %0.4f       GrandPot: %0.6f"%(T, g)
         print "T: %0.4f       Entropy:  %0.6f"%(T, s)
+        print "T: %0.4f       Energy:  %0.6f"%(T, e)
     entropy = np.asarray(entropy)
     grandpot = np.asarray(grandpot)
     energy = grandpot.copy()
@@ -207,12 +241,14 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=60,savefile=Fal
 
 if __name__ == "__main__":
     U = float(sys.argv[1])
+    ngrid = 200
     write2file = True
+    gaussian = True
     outdir = "data/"
-    beta = np.linspace(0.1,10,100,endpoint=True)
+    beta = np.array([10.])#np.linspace(0.1,10,100,endpoint=True)
     Tgrid = 1./beta
     #Tgrid = np.linspace(0.00,2.0,41,endpoint=True)
     #Tgrid = np.linspace(1.05,2.0,20, endpoint=True)
-    solve_energy_curve(U,Tgrid,savefile=write2file)
+    solve_energy_curve(U,Tgrid,ngrid=ngrid,savefile=write2file,gaussian=gaussian)
 
 
