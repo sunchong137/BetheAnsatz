@@ -130,7 +130,7 @@ class BetheAnsatzFT(object):
     def Enfunc(self, epsm, epsp):
         return self.sconvfunc(epsm + epsp)
    
-    def solve_epsilon_scf(self, nstep=100, tol = 1e-10):
+    def solve_epsilon_scf(self, nstep=150, tol = 1e-10):
     
         print "Calculating epsilon and kappa..."
         nmax  = 20
@@ -186,7 +186,7 @@ def _get_scaled_legendre_roots(wl, wh, nw):
     wts *= (wh - wl) / 2.
     return freqs, wts
 
-def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=100,savefile=False, gaussian=False,**kwargs):
+def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.006, ngrid=100,savefile=False, gaussian=False, save_beta=True, **kwargs):
     
     entropy = []
     grandpot = []
@@ -202,16 +202,22 @@ def solve_energy_curve(U, Tgrid, outdir='./data', dT=0.01, ngrid=100,savefile=Fa
         grandpot.append([0, e-U/2.])
         entropy.append([0, 0])
         FiniteTgrid = Tgrid[1:]
+        save_beta = False
 
 
     for T in FiniteTgrid:
         obj = BetheAnsatzFT(U, T, ngrid,gaussian=gaussian)
         g = obj.solve_grandpot()
-        grandpot.append([T, g])
         objp = BetheAnsatzFT(U, T+dT, ngrid,gaussian=gaussian)
         objm = BetheAnsatzFT(U, T-dT, ngrid,gaussian=gaussian)
         s = -(objp.solve_grandpot() - objm.solve_grandpot())/(2*dT)
-        entropy.append([T, s])
+        if save_beta:
+            grandpot.append([1./T, g])
+            entropy.append([1./T, s])
+        else:
+            grandpot.append([T, g])
+            entropy.append([T, s])
+            
         e = g + U/2. + T*s
         print "T: %0.4f       GrandPot: %0.6f"%(T, g)
         print "T: %0.4f       Entropy:  %0.6f"%(T, s)
@@ -246,6 +252,7 @@ if __name__ == "__main__":
     gaussian = True
     outdir = "data/"
     beta = np.array([10.])#np.linspace(0.1,10,100,endpoint=True)
+    beta = np.arange(10,20,1)
     Tgrid = 1./beta
     #Tgrid = np.linspace(0.00,2.0,41,endpoint=True)
     #Tgrid = np.linspace(1.05,2.0,20, endpoint=True)
