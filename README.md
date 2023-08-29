@@ -1,7 +1,8 @@
-##Bethe Ansatz at ground state and finite temperature
+Bethe Ansatz at ground state and finite temperature
+===================================================
 
-Author: Chong Sun <csun2@caltech.edu>
+Author: Chong Sun <sunchong137@gmail.com>
 
-"gs_knizia" directory is written by Gerald Knizia
+`gs_knizia` directory is written by Gerald Knizia
 
-The derivations are in the ipynb file.
+The derivations are in the `ipynb` files.
