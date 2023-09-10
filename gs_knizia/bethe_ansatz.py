@@ -21,11 +21,11 @@
 
 from __future__ import print_function
 import numpy as np
-from commands import getoutput
 import scipy.optimize as optimize
+from subprocess import getoutput
 from math import pi
 
-CALL_DIR = '/home/sunchong/work/BetheAnsatz/gs_knizia/'
+CALL_DIR = './'
 
 def CalcBetheEnergy_UandQ(U, Q_):
    """invoke the C++ program for given parameters U, Q. Return energy for
@@ -62,7 +62,7 @@ def FindQForN(U, TargetN):
       return (N - TargetN)**2
    try:
       Q = optimize.brent(Err, brack = (0.0, 0.95, 1.0), tol=Tol, maxiter=1000)
-   except ValueError,e:
+   except ValueError:
       Q = optimize.fminbound(Err, 0.0, 1.0, xtol=Tol, maxfun=1000)
    E, N = CalcBetheEnergy_UandQ(U, Q)
    assert(abs(N - TargetN) <= 1e-5)

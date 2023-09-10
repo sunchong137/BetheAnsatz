@@ -1,51 +1,10 @@
-/* This program is released under a "I hope no one has to deal with this
- * ever again"-license. You may do with it as you wish, including
- * distributing it in source- or binary form, as long as you do not blame
- * me if anything goes wrong.
- * 
- * If you find the program useful, I would appreciate a citation to
- * 
- *    Knizia, Chan - Density Matrix Embedding: A Simple Alternative
- *       to Dynamical Mean-Field Theory
- *    http://dx.doi.org/10.1103/PhysRevLett.109.186404
- * 
- * in published work using the program. That is the paper for which it
- * was written. In any case you should cite
- * 
- *    Shiba - Magnetic Susceptibility at Zero Temperature for the
- *       One-Dimensional Hubbard Model
- *    http://dx.doi.org/10.1103/PhysRevB.6.930
- * 
- * which describes the algorithm which was employed in this program.
- * -- Gerald Knizia, 2014-06-03
- */
-
-// calculates 1D Hubbard model E(U,f) where f is the filling; based on
-// [1] Shiba - Magnetic susceptibility at zero temperture for the
-//     one-dimensional Hubbard model [Phys Rev B 6 930 (1972)]
-//
-// License: Use as you see fit, but don't blame me if something goes
-//          wrong!
-//
-//                                   -- Gerald Knizia, 2011
-//
-// Compile:
-//    c++ -O3 -DNDEBUG bethe_ansatz.cpp -o bethe_ansatz
-// Run:
-//    Meant to be run by bethe_ansatz.py.
-//    This program just takes two arguments (U and Q) and calculates
-//    the energy and the particle number resulting from this. Other properties
-//    can be obtained as derivatives from those.
-//
-// See README.txt
-
 #include <iostream>
 #include <cmath>
 #include <cstring>
 #include <stdexcept>
 #include <cstdlib> // atof/atoi
 #include <vector>
-#include <boost/format.hpp>
+// #include <boost/format.hpp>
 
 #ifndef M_PI
    #define M_PI 3.14159265358979323846
@@ -53,8 +12,8 @@
 
 using std::cout;
 using std::endl;
-using boost::format;
-using boost::str;
+// using boost::format;
+// using boost::str;
 
 typedef double
    scalar;
@@ -76,7 +35,8 @@ typedef unsigned int
          r += sign * d;
          sign = -sign;
          if ((((long)n) & 0xfff) == 1)
-            cout << (format("   n = %i   r = %.8f   d = %f") % n % r % d) << endl;
+            cout << "n = " << n << ", r = " << r << ", d = " << d << endl;
+            // cout << (format("   n = %i   r = %.8f   d = %f") % n % r % d) << endl;
          if (std::abs(d/r) < 1e-16)
             break;
       }
@@ -194,9 +154,12 @@ static void solve_for_rho(result_entry_t *r, scalar *rho, scalar Q, scalar u, in
    for (uint i = 0; i < nGrid; ++ i)
       dabl += dx(i,Q);
    if (print >= 2) {
-      cout << format("sum[dx] = %.8f  2*Q=%.8f") % dabl % (2*Q) << endl;
-      cout << format("x[0] = %.8f") % x(0,Q) << endl;
-      cout << format("x[nGrid-1] = %.8f") % x(nGrid-1,Q) << endl;
+      cout << "sum[dx] = " << dabl <<  ", 2*Q = " << 2*Q << endl;
+      cout << "x[0] = " << x(0,Q) << endl; 
+      cout << "x[nGrid-1] = " << x(nGrid-1,Q) << endl;
+      // cout << format("sum[dx] = %.8f  2*Q=%.8f") % dabl % (2*Q) << endl;
+      // cout << format("x[0] = %.8f") % x(0,Q) << endl;
+      // cout << format("x[nGrid-1] = %.8f") % x(nGrid-1,Q) << endl;
    }
    r->Q = Q;
    r->u = u;
@@ -212,12 +175,14 @@ static void solve_for_rho(result_entry_t *r, scalar *rho, scalar Q, scalar u, in
       double max_dev_rho = eval_rho_rhs_for_Q(r->energy_per_site, r->filling, pout, pin, Q, u, tmp);
       double delta_e = last_e - r->energy_per_site;
       if (print >= 1) {
-         cout << format("it = %-4i  E = %10.5f  N/Na = %10.5f  max_dev_rho = %7.2e  delta_e = %7.2e  rho = [")
-            % it % r->energy_per_site % r->filling % max_dev_rho % delta_e;
-         uint nPrint = 7;
-         for ( uint i = 0; i < nPrint; ++ i )
-            cout << format(" %10.5f") % pout[(i*nGrid)/(nPrint-1)];
-         cout << "]" << endl;
+         cout << "it = " << it << ", E = " << r->energy_per_site << "N/Na = " << r->filling  << "max_dev_rho = " <<  max_dev_rho << endl;
+         cout << "delta E = " << delta_e << endl;
+         // cout << format("it = %-4i  E = %10.5f  N/Na = %10.5f  max_dev_rho = %7.2e  delta_e = %7.2e  rho = [")
+         //    % it % r->energy_per_site % r->filling % max_dev_rho % delta_e;
+         // uint nPrint = 7;
+         // for ( uint i = 0; i < nPrint; ++ i )
+         //    cout << format(" %10.5f") % pout[(i*nGrid)/(nPrint-1)];
+         // cout << "]" << endl;
       }
       std::swap(pin, pout);
       if (it > 2 && max_dev_rho < 1e-15 && std::abs(delta_e) < 1e-15) {
@@ -227,7 +192,8 @@ static void solve_for_rho(result_entry_t *r, scalar *rho, scalar Q, scalar u, in
       last_e = r->energy_per_site;
    }
    if (!converged)
-      throw std::runtime_error(str(format("sorry, bethe_ansatz.cpp failed to converge! Q=%.8f u=%8f.") % Q % u));
+      throw std::runtime_error("sorry, bethe_ansatz.cpp failed to converge!");
+      // throw std::runtime_error(str(format("sorry, bethe_ansatz.cpp failed to converge! Q=%.8f u=%8f.") % Q % u));
    if (rho != pin)
       std::memcpy(rho, pin, sizeof(rho[0])*nGrid);
 }
@@ -246,14 +212,18 @@ int main(int argc, char **argv)
    if (u < 1.) {
       nGrid *= 1./u;
       nGrid += (nGrid % 2);
-      std::cout << format("WARNING: Increased number of grid points to %i due to small U. May get slow!") % nGrid << std::endl;
+      std::cout << "WARNING: Increased number of grid points due to small U. May get slow!" << endl;
+      // std::cout << format("WARNING: Increased number of grid points to %i due to small U. May get slow!") % nGrid << std::endl;
    }
 
    std::vector<scalar>
       rho(nGrid, 0.0);
    result_entry_t r;
    solve_for_rho(&r, &rho[0], q * M_PI, u, 0);
-   std::cout << format("E= %.15f  n= %.15f") % r.energy_per_site % r.filling << std::endl;
+   float E = r.energy_per_site;
+   float n = r.filling;
+   cout << "E= " <<  r.energy_per_site << "  n= " << r.filling  << endl;
+   // std::cout << format("E= %.15f  n= %.15f") % r.energy_per_site % r.filling << std::endl;
    return 0;
 }
 
